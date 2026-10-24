@@ -5,6 +5,7 @@ import './events';
 import './natives';
 import './stuff/animal';
 import './stuff/apple';
+import './stuff/general-store';
 import './stuff/geyser';
 import './stuff/gold-panning';
 import './stuff/hats';

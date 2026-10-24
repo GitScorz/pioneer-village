@@ -1,7 +1,9 @@
-import { PedManager, PVTarget, PVDoors, type PedReactionConfig } from '@lib/client';
+import { PVTarget, PedManager, type PedReactionConfig } from '@lib/client';
+import { EntityProofs } from '@lib/flags/entity-proofs';
+import { Vector3 } from '@lib/math';
+
 import BankData from '../shared/data/bankData';
 import bankController from './controllers/bank-controller';
-import { Vector3 } from '@lib/math';
 
 const tellerManager = PedManager.getInstance();
 
@@ -19,9 +21,27 @@ const registerTellerTarget = (bankId: Bank.Id, ped: Ped): void => {
     type: 'point',
     group: [{ x, y, z: z + 1.3 }],
     data: [
-      { id: `banking::deposit_${bankId}`,      label: 'Banking',           icon: 'coins', event: 'banking:client:deposit',           parameters: { bankId } },
-      { id: `banking::collect_${bankId}`,      label: 'Collect Transfers', icon: 'inbox', event: 'banking:client:collect-transfers', parameters: { bankId } },
-      { id: `banking::sellminerals_${bankId}`, label: 'Sell Minerals',     icon: 'gem',   event: 'banking:client:sell-minerals',     parameters: { bankId } },
+      {
+        id: `banking::deposit_${bankId}`,
+        label: 'Banking',
+        icon: 'coins',
+        event: 'banking:client:deposit',
+        parameters: { bankId },
+      },
+      {
+        id: `banking::collect_${bankId}`,
+        label: 'Collect Transfers',
+        icon: 'inbox',
+        event: 'banking:client:collect-transfers',
+        parameters: { bankId },
+      },
+      {
+        id: `banking::sellminerals_${bankId}`,
+        label: 'Sell Minerals',
+        icon: 'gem',
+        event: 'banking:client:sell-minerals',
+        parameters: { bankId },
+      },
       // disable the example movement/sequence routine in BlackWater
       // { id: `banking::testanim_${bankId}`,     label: 'test anim',         icon: 'coins', event: 'banking:client:test',              parameters: { bankId } }
     ],
@@ -42,7 +62,7 @@ const registerTellerTarget = (bankId: Bank.Id, ped: Ped): void => {
           // to disable the point target when the teller Ped is not in their default position.
           // They move away from it due to animations that don't end at the same position
           // where they started, or if some movement sequence was performed??
-          const pedPos = Vector3.fromArray(GetEntityCoords(ped, true));
+          const pedPos = Vector3.fromArray(GetEntityCoords(ped, true, false));
           if (pedPos.getDistance(Vector3.fromObject(bank.tellerPosition)) < 2.0) {
             return true;
           }
@@ -78,8 +98,14 @@ export const spawnTeller = async (bankId: Bank.Id): Promise<void> => {
     //   wait     — brief pause before the next cycle
     routine: [
       // { type: 'scenario', name: 'WORLD_HUMAN_VAL_BANKTELLER', duration: 10_000 },
-      { type: 'anim',     dict: 'script_proc@robberies@bank@valbank_counter', anim: 'counter_loop', duration: 15_000, flags: 1 },
-      
+      {
+        type: 'anim',
+        dict: 'script_proc@robberies@bank@valbank_counter',
+        anim: 'counter_loop',
+        duration: 15_000,
+        flags: 1,
+      },
+
       // Note: Disabled for now, as these animations cause the ped to slowly drift from there original position/
       // will need to create some sort of re-centering routine type to ensure npc stays at desired location over time.
       // { type: 'anim',     dict: 'script_proc@robberies@bank@valbank_counter', anim: 'enter_counter', duration: 3_000, flags: 1 },
@@ -98,7 +124,7 @@ export const spawnTeller = async (bankId: Bank.Id): Promise<void> => {
         cooldownMs: 8_000,
         lines: [
           { ref: '0822_S_M_M_BANKCLERK_01_WHITE_01', name: 'GENERIC_FRIGHTENED_HIGH', params: 'speech_params_force' },
-          { ref: '0822_S_M_M_BANKCLERK_01_WHITE_01', name: 'LAW_THREAT',  params: 'speech_params_force' },
+          { ref: '0822_S_M_M_BANKCLERK_01_WHITE_01', name: 'LAW_THREAT', params: 'speech_params_force' },
         ],
       },
       // Teller reacts to any violence happening nearby (any entity damaged).
@@ -107,7 +133,11 @@ export const spawnTeller = async (bankId: Bank.Id): Promise<void> => {
         cooldownMs: 15_000,
         lines: [
           { ref: '0822_S_M_M_BANKCLERK_01_WHITE_01', name: 'GET_AWAY_FROM_ME', params: 'speech_params_force_shouted' },
-          { ref: '0822_S_M_M_BANKCLERK_01_WHITE_01', name: 'GENERIC_SHOCKED_MED',  params: 'speech_params_force_shouted' },
+          {
+            ref: '0822_S_M_M_BANKCLERK_01_WHITE_01',
+            name: 'GENERIC_SHOCKED_MED',
+            params: 'speech_params_force_shouted',
+          },
         ],
         onReact: (pedHandle, data) => {
           // e.g. trigger a flee animation, send a server event, update UI, etc.
@@ -119,17 +149,19 @@ export const spawnTeller = async (bankId: Bank.Id): Promise<void> => {
 
   if (!ped) return;
 
-  // 1	bullet proof
-  // 2	flame proof
-  // 4	explosion proof
-  // 8	collision proof
-  // 16	melee proof
-  // 32	steam proof
-  // 64	smoke proof
-  // 128	headshots proof
-  // 256	projectile proof
-  // https://github.com/femga/rdr3_discoveries/blob/master/AI/ENTITY_PROOFS/README.md
-  SetEntityProofs(ped, 1 + 2 + 4 + 16 + 32 + 64 + 128 + 256, false);
+  SetEntityProofs(
+    ped,
+    EntityProofs.BULLET |
+      EntityProofs.FLAME |
+      EntityProofs.EXPLOSION |
+      EntityProofs.COLLISION |
+      EntityProofs.MELEE |
+      EntityProofs.STEAM |
+      EntityProofs.SMOKE |
+      EntityProofs.HEADSHOTS |
+      EntityProofs.PROJECTILE,
+    false,
+  );
 
   registerTellerTarget(bankId, ped);
   console.log(`[Banking] Spawned local teller for ${bankId} (ped: ${ped})`);

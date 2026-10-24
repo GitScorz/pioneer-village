@@ -20,6 +20,14 @@ export interface PedSpeechConfig {
   intervalMs: [number, number];
 }
 
+export interface PedZoneConfig {
+  ref: string;
+  params: string;
+  zoneName: string;
+  greetingNames?: (string | [() => boolean, string])[];
+  farewellNames?: (string | [() => boolean, string])[];
+}
+
 export type RoutineStep =
   | { type: 'scenario'; name: string; duration?: number }
   | { type: 'anim'; dict: string; anim: string; flags?: number; duration?: number }
@@ -63,6 +71,7 @@ export interface PedConfig {
   missionEntity?: boolean;
   scenario?: string;
   speech?: PedSpeechConfig;
+  zone?: PedZoneConfig;
   routine?: RoutineStep[];
   reactions?: PedReactionConfig[];
 }
@@ -144,6 +153,7 @@ export class PedManager {
     this._peds.set(id, managed);
 
     if (config.speech) this._startSpeechLoop(managed);
+    if (config.zone) this._setupZoneGreetings(managed);
     if (config.routine?.length) this._startRoutine(managed);
     if (config.reactions?.length) this._registerReactions(managed);
 
@@ -232,6 +242,44 @@ export class PedManager {
     schedule();
   }
 
+  private _setupZoneGreetings(managed: ManagedPed): void {
+    const { zone } = managed.config;
+    if (!zone) return;
+
+    on(`zones::${zone.zoneName}::enter`, () => {
+      if (zone.greetingNames) {
+        const lines: string[] = [];
+        for (const line of zone.greetingNames) {
+          if (typeof line === 'string') {
+            lines.push(line);
+          } else if (line[0]()) {
+            lines.push(line[1]);
+          }
+        }
+
+        const line = lines[Math.floor(Math.random() * lines.length)];
+        if (typeof line === 'string') {
+          playAmbientSpeech(managed.handle, zone.ref, line, zone.params);
+        }
+      }
+    });
+    on(`zones::${zone.zoneName}::exit`, () => {
+      if (zone.farewellNames) {
+        const lines: string[] = [];
+        for (const line of zone.farewellNames) {
+          if (typeof line === 'string') {
+            lines.push(line);
+          } else if (line[0]()) {
+            lines.push(line[1]);
+          }
+        }
+
+        const line = lines[Math.floor(Math.random() * lines.length)];
+        playAmbientSpeech(managed.handle, zone.ref, line, zone.params);
+      }
+    });
+  }
+
   private _stopSpeechLoop(managed: ManagedPed): void {
     if (managed.speechTimer !== undefined) {
       clearTimeout(managed.speechTimer);
@@ -267,7 +315,7 @@ export class PedManager {
               if (step.duration) await Delay(step.duration);
               break;
 
-          case 'anim':
+            case 'anim':
               console.log(
                 `[PedManager] routine "${managed.id}" anim=${step.dict}@${step.anim} duration=${step.duration}`,
               );

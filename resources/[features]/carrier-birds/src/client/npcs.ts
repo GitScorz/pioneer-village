@@ -18,7 +18,7 @@ const manager = PedManager.getInstance();
     speech: {
       ref: '0822_S_M_M_BANKCLERK_01_WHITE_01',
       names: ['HOWS_IT_GOING', 'WELCOME'],
-      lines: ['HOWS_IT_GOING', 'WELCOME'],
+      // lines: ['HOWS_IT_GOING', 'WELCOME'],
       params: 'speech_params_standard',
       intervalMs: [15_000, 45_000],
     },

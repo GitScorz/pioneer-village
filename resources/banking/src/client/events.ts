@@ -14,6 +14,10 @@ async function openBankingUI(
   if (!resolvedBankId) return;
 
   const characterId = PVGame.characterId();
+  if (!characterId) {
+    console.log('[Banking] No character selected, cannot open banking UI.');
+    return;
+  }
   const character = PVGame.getCurrentCharacter();
   const bankData = BankData.find((b) => b.identifier === resolvedBankId);
   const [loans, , cashOnPerson] = await Promise.all([
@@ -63,6 +67,10 @@ on('banking:client:collect-transfers', async (_entity: number, pArgs: Record<str
   if (!bankId) return;
 
   const characterId = PVGame.characterId();
+  if (!characterId) {
+    console.log('[Banking] No character selected, cannot collect transfers.');
+    return;
+  }
   const result = await bankController.collectTransfers(characterId);
   const pm = PedManager.getInstance();
 
@@ -73,7 +81,7 @@ on('banking:client:collect-transfers', async (_entity: number, pArgs: Record<str
     emitUINotify(`Collected ${result.collected} transfer(s) totalling $${result.total}`, 'success');
     pm.playSpeech(`banking::teller_${bankId}`, {
       ref: '0822_S_M_M_BANKCLERK_01_WHITE_01',
-      names: ["COME_SEE_THIS"],
+      names: ['COME_SEE_THIS'],
       params: 'speech_params_force',
       intervalMs: [0, 0],
     });
@@ -84,7 +92,7 @@ on('banking:client:collect-transfers', async (_entity: number, pArgs: Record<str
       // ref: '0822_S_M_M_BANKCLERK_01_WHITE_01',
       // names: ['NO_IDEA'],
       // names: ['HAND_OVER_MONEY'],
-      ref:'0083_U_M_O_BLWGENERALSTOREOWNER_01',
+      ref: '0083_U_M_O_BLWGENERALSTOREOWNER_01',
       names: ['REFUSE_OFFER', 'FAREWELL_NO_SALE'],
       params: 'speech_params_force',
       intervalMs: [0, 0],
@@ -92,23 +100,22 @@ on('banking:client:collect-transfers', async (_entity: number, pArgs: Record<str
   }
 });
 
-on('banking:client:bank-info', async (_entity: number, pArgs: Record<string, any>) => {
-  const bankId = pArgs?.bankId ?? bankController.currentBank;
-  if (!bankId) return;
-
-  const info = await bankController.getBankInfo(bankId);
-  if (!info) {
-    console.log('[Banking] Could not retrieve bank info.');
-    emitUINotify('Could not retrieve bank info.', 'error');
-    return;
-  }
-
-  const bankName = BankData.find((b) => b.identifier === bankId)?.name ?? bankId;
-  console.log(
-    `[Banking] ${bankName} — Reputation: ${info.reputationScore}/100 | Interest Rate: ${(info.interestRate * 100).toFixed(3)}% | Vault: $${info.vaultBalance.toFixed(2)}`,
-  );
-});
-
+// on('banking:client:bank-info', async (_entity: number, pArgs: Record<string, any>) => {
+//   const bankId = pArgs?.bankId ?? bankController.currentBank;
+//   if (!bankId) return;
+//
+//   const info = await bankController.getBankInfo(bankId);
+//   if (!info) {
+//     console.log('[Banking] Could not retrieve bank info.');
+//     emitUINotify('Could not retrieve bank info.', 'error');
+//     return;
+//   }
+//
+//   const bankName = BankData.find((b) => b.identifier === bankId)?.name ?? bankId;
+//   console.log(
+//     `[Banking] ${bankName} — Reputation: ${info.reputationScore}/100 | Interest Rate: ${(info.interestRate * 100).toFixed(3)}% | Vault: $${info.vaultBalance.toFixed(2)}`,
+//   );
+// });
 
 // TODO: Move elsewhere - TEST ANIMATION (blackwater) FOR TELLER RETRIEVING MONEY FROM VAULT
 // on('banking:client:test', async (_entity: number, pArgs: Record<string, any>) => {
@@ -169,7 +176,7 @@ on('banking:client:bank-info', async (_entity: number, pArgs: Record<string, any
 //     }, 10000);
 //   });
 
-//   await Delay(5_000); // Wait a moment, maybe do some cabinet animation or something here to make it look like the teller is interacting with the vault. 
+//   await Delay(5_000); // Wait a moment, maybe do some cabinet animation or something here to make it look like the teller is interacting with the vault.
 
 //   const c = BankData.find((b) => b.identifier === bankId);
 //   if (!c) return;

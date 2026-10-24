@@ -202,8 +202,8 @@ setTick(async () => {
 
       setImmediate(() => {
         if (currentTarget && IsEntityAPed(currentTarget) && !IsPedPerformingMeleeAction(PVGame.playerPed(), 32768, 0)) {
-          ResetPedModelPersonality(GetEntityModel(PVGame.playerPed()));
-          ClearPedTasks(PVGame.playerPed());
+          // ResetPedModelPersonality(GetEntityModel(PVGame.playerPed()));
+          ClearPedTasks(PVGame.playerPed(), false, false);
           TaskMelee(PVGame.playerPed(), currentTarget, currentAnimal.attack || 0, 1, 1, 1.75, 0, -1.0);
           // console.log(`TaskMelee(${PVGame.playerPed()}, ${currentTarget}, ${currentAnimal.attack || 0}, 1, 1, 1.75, 0, -1.0);`);
         }

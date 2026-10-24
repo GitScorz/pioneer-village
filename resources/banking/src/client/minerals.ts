@@ -8,6 +8,11 @@ on('banking:client:sell-minerals', async (_entity: number, pArgs: Record<string,
   if (!bankId) return;
 
   const characterId = PVGame.characterId();
+  if (!characterId) {
+    console.log('[Banking] No character selected. Cannot sell minerals.');
+    emitUINotify('No character selected. Cannot sell minerals.', 'error');
+    return;
+  }
 
   // Fetch current prices and remaining budget
   const { prices, budget } = await bankController.getMineralPrices(bankId);
@@ -51,7 +56,9 @@ on('banking:client:sell-minerals', async (_entity: number, pArgs: Record<string,
   const result = await bankController.sellMinerals(characterId, bankId, sellLines);
 
   if (result.success) {
-    console.log(`[Banking] Sold minerals for $${result.payout.toFixed(2)}. Bank budget remaining: $${result.budgetRemaining.toFixed(2)}`);
+    console.log(
+      `[Banking] Sold minerals for $${result.payout.toFixed(2)}. Bank budget remaining: $${result.budgetRemaining.toFixed(2)}`,
+    );
     emitUINotify(`Sold minerals for $${result.payout.toFixed(2)}.`, 'success');
   } else {
     console.log(`[Banking] Mineral sale failed: ${result.message}`);

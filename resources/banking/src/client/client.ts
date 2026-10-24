@@ -11,6 +11,10 @@ import './zones';
 
 onUICall('banking.open-safety-box-inventory', async (bankId: Bank.Id) => {
   const characterId = PVGame.characterId();
+  if (!characterId) {
+    console.log('[Banking] No character selected, cannot open banking UI.');
+    return { success: false };
+  }
   const box = await bankController.getSafetyBox(characterId, bankId);
   if (!box?.inventoryId) return { success: false };
   emitUI('banking.close');
@@ -41,8 +45,6 @@ on('onResourceStop', (resourceName: string) => {
 });
 
 // ── Debug helpers ────────────────────────────────────────────────────────────
-
-const charId = () => PVGame.characterId();
 
 const printResult = (label: string, result: Record<string, any>) => {
   console.log(`[Banking:${label}]`, JSON.stringify(result));
@@ -76,7 +78,12 @@ RegisterCommand(
       console.log('Banks:', BankData.map((b) => b.identifier).join(', '));
       return;
     }
-    const result = await bankController.deposit(charId(), bankId, amount);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.deposit(characterId, bankId, amount);
     printResult('deposit', result);
   },
   false,
@@ -92,7 +99,12 @@ RegisterCommand(
       console.log('Usage: /bankWithdraw [bankId] [amount]');
       return;
     }
-    const result = await bankController.withdraw(charId(), bankId, amount);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.withdraw(characterId, bankId, amount);
     printResult('withdraw', result);
   },
   false,
@@ -110,7 +122,12 @@ RegisterCommand(
       console.log('Usage: /bankWire [fromBankId] [toBankId] [toCharacterId] [amount]');
       return;
     }
-    const result = await bankController.wireTransfer(charId(), toCharId, fromBankId, toBankId, amount);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.wireTransfer(characterId, toCharId, fromBankId, toBankId, amount);
     printResult('wire', result);
   },
   false,
@@ -120,35 +137,40 @@ RegisterCommand(
 RegisterCommand(
   'bankCollect',
   async () => {
-    const result = await bankController.collectTransfers(charId());
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.collectTransfers(characterId);
     printResult('collect', result);
   },
   false,
 );
 
 // /bankInfo [bankId] — show reputation, interest rate, vault balance
-RegisterCommand(
-  'bankInfo',
-  async (_source: number, args: string[]) => {
-    const bankId = (args[0] as Bank.Id) ?? bankController.currentBank;
-    if (!bankId) {
-      console.log('Usage: /bankInfo [bankId]  (or enter a bank zone)');
-      console.log('Banks:', BankData.map((b) => b.identifier).join(', '));
-      return;
-    }
-    const info = await bankController.getBankInfo(bankId);
-    if (!info) {
-      console.log(`[Banking] No vault record found for ${bankId}`);
-      return;
-    }
-    const bankName = BankData.find((b) => b.identifier === bankId)?.name ?? bankId;
-    console.log(`[Banking] ${bankName}`);
-    console.log(`  Reputation : ${info.reputationScore}/100`);
-    console.log(`  Interest   : ${(info.interestRate * 100).toFixed(3)}% per tick`);
-    console.log(`  Vault float: $${info.vaultBalance.toFixed(2)}`);
-  },
-  false,
-);
+// RegisterCommand(
+//   'bankInfo',
+//   async (_source: number, args: string[]) => {
+//     const bankId = (args[0] as Bank.Id) ?? bankController.currentBank;
+//     if (!bankId) {
+//       console.log('Usage: /bankInfo [bankId]  (or enter a bank zone)');
+//       console.log('Banks:', BankData.map((b) => b.identifier).join(', '));
+//       return;
+//     }
+//     const info = await bankController.getBankInfo(bankId);
+//     if (!info) {
+//       console.log(`[Banking] No vault record found for ${bankId}`);
+//       return;
+//     }
+//     const bankName = BankData.find((b) => b.identifier === bankId)?.name ?? bankId;
+//     console.log(`[Banking] ${bankName}`);
+//     console.log(`  Reputation : ${info.reputationScore}/100`);
+//     console.log(`  Interest   : ${(info.interestRate * 100).toFixed(3)}% per tick`);
+//     console.log(`  Vault float: $${info.vaultBalance.toFixed(2)}`);
+//   },
+//   false,
+// );
 
 // /bankLoan [bankId] [amount] [daysUntilDue] — take a loan (no collateral for debug)
 RegisterCommand(
@@ -162,7 +184,12 @@ RegisterCommand(
       return;
     }
     const dueAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-    const result = await bankController.takeLoan(charId(), bankId, amount, null, dueAt);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.takeLoan(characterId, bankId, amount, null, dueAt);
     printResult('loan', result);
   },
   false,
@@ -178,7 +205,12 @@ RegisterCommand(
       console.log('Usage: /bankRepay [loanId] [amount]');
       return;
     }
-    const result = await bankController.repayLoan(charId(), loanId, amount);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const result = await bankController.repayLoan(characterId, loanId, amount);
     printResult('repay', result);
   },
   false,
@@ -188,7 +220,12 @@ RegisterCommand(
 RegisterCommand(
   'bankLoans',
   async () => {
-    const loans = await bankController.getLoans(charId());
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const loans = await bankController.getLoans(characterId);
     if (!loans.length) {
       console.log('[Banking] No loans found.');
       return;
@@ -212,11 +249,16 @@ RegisterCommand(
       console.log('Usage: /bankSafetyBox [bankId]');
       return;
     }
-    const box = await bankController.getSafetyBox(charId(), bankId);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const box = await bankController.getSafetyBox(characterId, bankId);
     if (box) {
       console.log(`[Banking] Safety box #${box.id} active at ${bankId}. Next due: ${box.nextDueAt}`);
     } else {
-      const result = await bankController.rentSafetyBox(charId(), bankId);
+      const result = await bankController.rentSafetyBox(characterId, bankId);
       printResult('safetybox-rent', result);
     }
   },
@@ -246,7 +288,12 @@ RegisterCommand(
   async (_source: number, args: string[]) => {
     const bankId = (args[0] as Bank.Id) || null;
     const limit = Number(args[1]) || 20;
-    const txs = await bankController.getTransactions(charId(), bankId, limit);
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
+    const txs = await bankController.getTransactions(characterId, bankId, limit);
     if (!txs.length) {
       console.log('[Banking] No transactions found.');
       return;
@@ -285,7 +332,7 @@ RegisterCommand(
     const tab: Tab = validTabs.includes(args[0] as Tab) ? (args[0] as Tab) : 'deposit';
     let resolvedBankId: Bank.Id = (args[1] as Bank.Id) ?? BankData[0].identifier;
     if (!args[1]) {
-      const [px, py, pz] = GetEntityCoords(PlayerPedId(), true);
+      const [px, py, pz] = GetEntityCoords(PlayerPedId(), true, false);
       const nearby = BankData.find((b) => {
         const dx = px - b.tellerPosition.x;
         const dy = py - b.tellerPosition.y;
@@ -298,11 +345,17 @@ RegisterCommand(
     const bankData = BankData.find((b) => b.identifier === bankId);
 
     if (!bankData) {
-      console.log(`[Banking:bankUI] Unknown bankId "${bankId}". Valid: ${BankData.map((b) => b.identifier).join(', ')}`);
+      console.log(
+        `[Banking:bankUI] Unknown bankId "${bankId}". Valid: ${BankData.map((b) => b.identifier).join(', ')}`,
+      );
       return;
     }
 
-    const characterId = charId();
+    const characterId = PVGame.characterId();
+    if (!characterId) {
+      console.log('No character selected');
+      return;
+    }
     const character = PVGame.getCurrentCharacter();
     const [loans, , cashOnPerson] = await Promise.all([
       bankController.getLoans(characterId),
